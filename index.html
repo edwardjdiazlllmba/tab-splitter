@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tab Splitter</title>
+<style>
+:root{--bg:#e9eef2;--paper:#fffdf7;--ink:#1c2b36;--mute:#6b7b87;--line:#cfd8de;--acc:#0f766e;--acc2:#e4572e;--chip:#eef3f5;--on:#0f766e;--onink:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a21;--paper:#17252e;--ink:#eaf0f3;--mute:#8da0ac;--line:#2c3f4b;--acc:#2dd4bf;--acc2:#ff8a65;--chip:#1f313b;--on:#2dd4bf;--onink:#06201c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1a21;--paper:#17252e;--ink:#eaf0f3;--mute:#8da0ac;--line:#2c3f4b;--acc:#2dd4bf;--acc2:#ff8a65;--chip:#1f313b;--on:#2dd4bf;--onink:#06201c;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;font-size:16px;line-height:1.45}
+.wrap{max-width:560px;margin:0 auto;padding:20px 14px 60px}
+h1{font-family:var(--fh,inherit);font-size:2.1rem;line-height:1.05;margin:8px 0 4px;letter-spacing:-.02em;font-weight:800}
+.sub{color:var(--mute);margin:0 0 18px}
+.num,.money{font-family:"DM Mono",ui-monospace,Menlo,monospace}
+.sheet{background:var(--paper);border-radius:var(--rs,6px);border:var(--bd,0);padding:18px 16px 22px;margin-bottom:16px;position:relative;
+box-shadow:var(--sh,0 1px 0 var(--line),0 10px 24px -14px rgba(0,0,0,.35))}
+.sheet:after{content:"";display:var(--tear,block);position:absolute;left:0;right:0;bottom:-6px;height:6px;
+background:linear-gradient(135deg,var(--paper) 50%,transparent 50%) 0 0/12px 6px,linear-gradient(225deg,var(--paper) 50%,transparent 50%) 0 0/12px 6px}
+h2{font-family:var(--fh,inherit);font-size:1.15rem;margin:0 0 4px;font-weight:700}
+.hint{color:var(--mute);font-size:.88rem;margin:0 0 12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:var(--rc,8px);padding:10px 12px;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
+input.grow{flex:1 1 120px}
+input.price{width:104px}
+button{font:inherit;cursor:pointer;border:0;border-radius:var(--rc,8px);padding:10px 14px;font-weight:600;background:var(--acc);color:var(--onink)}
+button.ghost{background:transparent;color:var(--mute);padding:6px 8px;font-weight:500}
+button.ghost:hover{color:var(--acc2)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);color:var(--ink);border:1.5px solid var(--line);border-radius:var(--rp,999px);padding:6px 12px;font-weight:500;font-size:.92rem}
+.chip.pick{cursor:pointer}
+.chip.pick[aria-pressed="true"]{background:var(--on);color:var(--onink);border-color:var(--on)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.item{border-top:1px dashed var(--line);padding:12px 0}
+.item:first-child{border-top:0}
+.item .top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.item .nm{font-weight:600;overflow-wrap:anywhere}
+.warn{color:var(--acc2);font-size:.85rem;margin-top:6px}
+.empty{color:var(--mute);font-size:.92rem;padding:6px 0}
+.tips button{background:var(--chip);color:var(--ink);border:1.5px solid var(--line);padding:8px 12px}
+.tips button[aria-pressed="true"]{background:var(--on);color:var(--onink);border-color:var(--on)}
+.field{display:flex;flex-direction:column;gap:4px;font-size:.88rem;color:var(--mute)}
+.treat{border-top:1px dashed var(--line);padding:10px 0;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.res{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px 0;border-top:1px dashed var(--line)}
+.res:first-of-type{border-top:0}
+.res .who{font-weight:700;display:flex;align-items:center;gap:8px}
+.res .det{color:var(--mute);font-size:.82rem;margin-top:2px}
+.res .amt{font-size:1.5rem;font-weight:500;text-align:right}
+.res.free .amt{color:var(--acc)}
+.tot{display:flex;justify-content:space-between;border-top:2px solid var(--ink);margin-top:6px;padding-top:12px;font-weight:700;font-size:1.05rem}
+.actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.actions .sec{background:var(--chip);color:var(--ink);border:1.5px solid var(--line)}
+.sr{position:absolute;left:-9999px}
+.slogan{margin:0 0 10px;font-weight:600;font-size:1.05rem;color:var(--acc)}
+.ico{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-4px}
+.ico.meal,.ico.coffee{color:var(--acc)}
+.ico.drink,.ico.dessert{color:var(--acc2)}
+#bgIcons{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:.3;display:none}
+body.prem #bgIcons{display:block}
+:root[data-skin="ink"] #bgIcons{opacity:.12}
+.wrap{position:relative;z-index:1}
+body.prem .sheet{background:color-mix(in srgb,var(--paper) 82%,transparent)}
+.icob{background:var(--chip);color:var(--ink);border:1.5px solid var(--line);border-radius:var(--rc,8px);padding:5px 8px;line-height:0}
+.icob[aria-pressed="true"]{border-color:var(--acc);box-shadow:inset 0 0 0 1.5px var(--acc)}
+[hidden]{display:none!important}
+body:not(.prem) #saveSplit:before,body:not(.prem) #shareImg:before,body:not(.prem) #bday:before,body:not(.prem) #scanBtn:before{content:"\1F512  "}
+:root[data-skin="midnight"]{--bg:#0b1020;--paper:#151b33;--ink:#e8ecff;--mute:#8f9bc4;--line:#27315a;--acc:#8b7bff;--acc2:#ff7ab6;--chip:#1e2646;--on:#8b7bff;--onink:#0b1020;--rs:18px;--rc:12px;--tear:none;--sh:0 12px 30px -16px rgba(0,0,0,.7);--bd:1px solid #27315a;color-scheme:dark}
+:root[data-skin="sunset"]{--bg:#fff1e6;--paper:#fffaf5;--ink:#3a1f1a;--mute:#8a6a5e;--line:#f1d2c0;--acc:#e4572e;--acc2:#b4235a;--chip:#ffe6d6;--on:#e4572e;--onink:#fff;--rs:20px;--rc:14px;--tear:none;--sh:0 10px 28px -18px rgba(180,60,30,.5);--fh:"Fraunces",Georgia,serif;color-scheme:light}
+:root[data-skin="forest"]{--bg:#e6efe3;--paper:#f7faf4;--ink:#1d2f22;--mute:#5f7566;--line:#c3d4c3;--acc:#2f7d4f;--acc2:#b5532a;--chip:#e3eddf;--on:#2f7d4f;--onink:#fff;--rs:4px;--rc:4px;--rp:4px;--tear:none;--sh:none;--bd:1.5px solid #c3d4c3;color-scheme:light}
+:root[data-skin="ink"]{--bg:#fff;--paper:#fff;--ink:#000;--mute:#444;--line:#000;--acc:#000;--acc2:#d00000;--chip:#f0f0f0;--on:#000;--onink:#fff;--rs:0;--rc:0;--rp:0;--tear:none;--sh:6px 6px 0 #000;--bd:2.5px solid #000;color-scheme:light}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=DM+Mono:wght@400;500&family=Fraunces:wght@600;800&display=swap">
+</head>
+<body>
+<div id="bgIcons" aria-hidden="true"></div>
+<div class="wrap">
+  <h1>Tab Splitter</h1>
+  <p class="slogan">Keep the good times going. We’ll take care of the math.</p>
+  <p class="sub">Add everyone, tag who shared each dish, and let someone’s meal be covered by the group.</p>
+  <div class="row" style="margin:0 0 12px"><label class="sr" for="lang">Language</label><select id="lang"></select></div>
+  <div class="chips" id="themes" role="group" aria-label="Theme" style="margin:0 0 18px"></div>
+  <div class="row" id="premBox" style="margin:0 0 18px"></div>
+
+  <section class="sheet" aria-labelledby="h-people">
+    <h2 id="h-people">Who’s at the table</h2>
+    <div class="row">
+      <label class="sr" for="pname">Name</label>
+      <input id="pname" class="grow" placeholder="Add a name" maxlength="24" autocomplete="off">
+      <button id="addPerson">Add person</button>
+    </div>
+    <div class="chips" id="people"></div>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-items">
+    <h2 id="h-items">Receipt items</h2>
+    <p class="hint">Tap names under an item to choose who shared it. The price is split evenly between them.</p>
+    <div class="row">
+      <label class="sr" for="iname">Item</label>
+      <input id="iname" class="grow" placeholder="Item, e.g. Pizza" maxlength="40" autocomplete="off">
+      <label class="sr" for="iprice">Price</label>
+      <input id="iprice" class="price num" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+      <button id="addItem">Add item</button>
+    </div>
+    <div class="row" id="scanRow" style="margin-top:8px" hidden><button id="scanBtn" style="background:var(--chip);color:var(--ink);border:1.5px solid var(--line)">📷 Scan receipt</button><input type="file" id="scanFile" accept="image/*" hidden></div><p class="hint" id="scanMsg" style="margin:8px 0 0" aria-live="polite"></p>
+    <div id="items" style="margin-top:8px"></div>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-tax">
+    <h2 id="h-tax">Sales tax</h2>
+    <p class="hint">Pick your state and city to fill in the rate, or enter the exact tax from your receipt. Tax is calculated on the food total and shared in proportion to what each person ordered.</p>
+    <div class="row tips"><button id="mPct" data-tmode="pct" aria-pressed="true">Rate by location</button><button id="mAmt" data-tmode="amt" aria-pressed="false">Exact amount</button></div>
+    <div id="pctBox" style="margin-top:12px">
+      <div class="row" style="align-items:flex-end">
+        <label class="field" style="flex:1 1 150px">State<select id="state"></select></label>
+        <label class="field" id="cityWrap" style="flex:1 1 180px" hidden>City<select id="city"></select></label>
+        <label class="field" id="localWrap" hidden>Local rate (%)<input id="localPct" class="price num" type="number" inputmode="decimal" min="0" step="0.001" placeholder="0.00"></label>
+        <label class="field">Total rate (%)<input id="taxPct" class="price num" type="number" inputmode="decimal" min="0" step="0.001" placeholder="0.00"></label>
+      </div>
+      <div class="row" style="margin-top:12px"><button id="locBtn" style="background:var(--chip);color:var(--ink);border:1.5px solid var(--line)">📍 Use my location</button></div><p class="hint" id="locMsg" style="margin:8px 0 0" aria-live="polite"></p>
+      <p class="hint" style="margin:10px 0 0">Pick a city for its combined rate, or choose Other to add your local rate to the state rate. Restaurant meals can be taxed differently in some places, so edit the total if your receipt differs.</p>
+    </div>
+    <div id="amtBox" style="margin-top:12px" hidden>
+      <label class="field">Tax ($)<input id="tax" class="price num" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></label>
+    </div>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-tip">
+    <h2 id="h-tip">Tip</h2>
+    <p class="hint">Set the tip as a percentage of the food total. It’s shared in proportion to what each person ordered.</p>
+    <label class="field">Tip (%)<input id="tip" class="price num" type="number" inputmode="decimal" min="0" step="0.5" value="18"></label>
+    <div class="row tips" id="tipPresets" style="margin-top:10px"></div>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-cover">
+    <h2 id="h-cover">Cover someone’s meal</h2>
+    <p class="hint">Pick a guest, then choose who chips in. The guest’s whole share (food, tax and tip) is divided evenly between those people.</p>
+    <div class="row">
+      <label class="sr" for="guest">Guest</label>
+      <select id="guest"></select>
+    </div>
+    <div class="chips" id="payers" aria-label="Who covers this meal"></div>
+    <div class="row" style="margin-top:12px"><button id="addTreat">Cover this meal</button><button id="bday" style="background:var(--chip);color:var(--ink);border:1.5px solid var(--line)">🎂 Birthday: everyone else covers</button></div>
+    <div id="treats" style="margin-top:8px"></div>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-res" aria-live="polite">
+    <h2 id="h-res">Who pays what</h2>
+    <div id="results"></div>
+    <div class="row" style="margin-top:14px;align-items:flex-end"><label class="field" style="flex:1 1 140px">Name (optional)<input id="slabel" maxlength="40" placeholder="e.g. Taco Tuesday"></label><label class="field">Date<input id="sdate" type="date"></label><button id="saveSplit">Save split</button></div>
+    <div class="actions">
+      <button class="sec" id="shareImg">Share image</button>
+      <button class="sec" id="copy">Copy summary</button>
+      <button class="sec" id="reset">Start over</button>
+    </div>
+    <div id="histBox"></div>
+  </section>
+</div>
+
+<div id="payModal" hidden style="position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))"><div class="sheet" style="max-width:420px;width:100%;margin:0"><h2>Go Premium</h2><p class="hint">One payment. Yours forever. No subscription and no ads.</p><ul style="margin:0 0 14px;padding-left:20px"><li>Save your splits with dates</li><li>Share a picture of the split</li><li>Scan receipts to add items</li><li>Meal and drink icons</li><li>Birthday mode</li><li>All five themes</li></ul><div class="row"><button id="buyBtn">Unlock for $1.99</button><button class="ghost" id="restoreBtn">Restore purchases</button><button class="ghost" id="payClose">Not now</button></div><p class="hint" id="payMsg" style="margin:10px 0 0" aria-live="polite"></p></div></div>
+<div id="imgModal" hidden style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.78);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))"><img id="outImg" alt="Split summary" style="max-width:100%;max-height:68vh;border-radius:8px"><p style="color:#fff;margin:0;font-size:.9rem;text-align:center">Press and hold the image to save it.</p><p id="imgMsg" style="color:#fff;margin:0;font-size:.85rem;text-align:center" aria-live="polite"></p><div class="row"><button id="shareBtn">Share</button><button id="smsBtn">Text it</button><button id="closeImg" style="background:#fff;color:#000">Close</button></div></div>
+<script>
+(function(){
+  var KEY="split-the-check-v1";
+  var S={people:[],items:[],treats:[],tax:"",tip:"18",nid:1,guest:null,payers:[],taxMode:"pct",city:"",taxPct:""};
+  var HUES=[172,14,262,42,200,330,96,0];
+  function load(){try{var r=localStorage.getItem(KEY);if(r){var d=JSON.parse(r);if(d&&d.people)S=Object.assign(S,d);}}catch(e){}}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+  function $(i){return document.getElementById(i)}
+  var CITIES=[["Alhambra","Los Angeles",11],["Anaheim","Orange",7.75],["Arcadia","Los Angeles",11],["Beverly Hills","Los Angeles",10.25],["Buena Park","Orange",8.75],["Burbank","Los Angeles",11],["Calabasas","Los Angeles",11.25],["Carson","Los Angeles",11],["Cathedral City","Riverside",9.25],["Compton","Los Angeles",11.25],["Desert Hot Springs","Riverside",8.75],["Escondido","San Diego",8.75],["Fontana","San Bernardino",8.75],["Fremont","Alameda",10.25],["Glendale","Los Angeles",11],["Grand Terrace","San Bernardino",7.75],["Grover Beach","San Luis Obispo",8.75],["Hemet","Riverside",8.75],["Hesperia","San Bernardino",7.75],["Highland","San Bernardino",7.75],["Huntington Beach","Orange",7.75],["Imperial Beach","San Diego",8.75],["Inglewood","Los Angeles",10.75],["Kingsburg","Fresno",8.975],["La Habra","Orange",8.75],["La Mesa","San Diego",8.5],["Laguna Niguel","Orange",7.75],["Lake Forest","Orange",7.75],["Lakewood","Los Angeles",11],["Lancaster","Los Angeles",11.75],["Lemon Grove","San Diego",8.75],["Live Oak","Sutter",7.25],["Long Beach","Los Angeles",11],["Los Angeles","Los Angeles",10.25],["Marysville","Yuba",8.25],["Moreno Valley","Riverside",8.75],["Oakland","Alameda",10.75],["Oceanside","San Diego",8.25],["Palm Desert","Riverside",8.75],["Palmdale","Los Angeles",11.75],["Pasadena","Los Angeles",11],["Paso Robles","San Luis Obispo",8.75],["Perris","Riverside",8.75],["Pleasant Hill","Contra Costa",9.25],["Point Arena","Mendocino",9.25],["Pomona","Los Angeles",11],["Poway","San Diego",7.75],["Rancho Cucamonga","San Bernardino",7.75],["Rancho Mirage","Riverside",7.75],["Red Bluff","Tehama",8.5],["Redding","Shasta",7.25],["Redlands","San Bernardino",8.75],["Rialto","San Bernardino",7.75],["Ridgecrest","Kern",9.25],["Riverside","Riverside",8.75],["San Bernardino","San Bernardino",8.75],["San Clemente","Orange",7.75],["San Diego","San Diego",7.75],["San Francisco","San Francisco",8.625],["San Jacinto","Riverside",8.75],["San Jose","Santa Clara",10],["San Juan Bautista","San Benito",9],["San Marcos","San Diego",8.75],["San Marino","Los Angeles",11.25],["San Ramon","Contra Costa",9.75],["Santa Clarita","Los Angeles",10.25],["Santa Monica","Los Angeles",11.25],["Torrance","Los Angeles",10.75],["Whittier","Los Angeles",11],["Yucaipa","San Bernardino",8.75],["Yucca Valley","San Bernardino",8.75]];
+  var STATES=[["AL","Alabama",4],["AK","Alaska",0],["AZ","Arizona",5.6],["AR","Arkansas",6.5],["CA","California",7.25],["CO","Colorado",2.9],["CT","Connecticut",6.35],["DE","Delaware",0],["DC","District of Columbia",6],["FL","Florida",6],["GA","Georgia",4],["HI","Hawaii",4],["ID","Idaho",6],["IL","Illinois",6.25],["IN","Indiana",7],["IA","Iowa",6],["KS","Kansas",6.5],["KY","Kentucky",6],["LA","Louisiana",5],["ME","Maine",5.5],["MD","Maryland",6],["MA","Massachusetts",6.25],["MI","Michigan",6],["MN","Minnesota",6.875],["MS","Mississippi",7],["MO","Missouri",4.225],["MT","Montana",0],["NE","Nebraska",5.5],["NV","Nevada",6.85],["NH","New Hampshire",0],["NJ","New Jersey",6.625],["NM","New Mexico",4.875],["NY","New York",4],["NC","North Carolina",4.75],["ND","North Dakota",5],["OH","Ohio",5.75],["OK","Oklahoma",4.5],["OR","Oregon",0],["PA","Pennsylvania",6],["RI","Rhode Island",7],["SC","South Carolina",6],["SD","South Dakota",4.2],["TN","Tennessee",7],["TX","Texas",6.25],["UT","Utah",6.1],["VT","Vermont",6],["VA","Virginia",5.3],["WA","Washington",6.5],["WV","West Virginia",6],["WI","Wisconsin",5],["WY","Wyoming",4]];
+  var XC=[["AL","Birmingham",10],["AK","Anchorage",0],["AZ","Phoenix",8.6],["CO","Denver",8.81],["FL","Jacksonville",7.5],["FL","Miami",7],["FL","Orlando",6.5],["GA","Atlanta",8.9],["HI","Honolulu",4.5],["ID","Boise",6],["IL","Chicago",10.5],["LA","New Orleans",10],["MN","Minneapolis",9.025],["MN","Saint Paul",9.875],["MO","Kansas City",9.975],["NV","Las Vegas",8.375],["NY","New York City",8.875],["PA","Philadelphia",8],["PA","Pittsburgh",7],["TN","Memphis",9.75],["TN","Nashville",9.25],["TX","Austin",8.25],["TX","Dallas",8.25],["TX","Fort Worth",8.25],["TX","Houston",8.25],["TX","San Antonio",8.25],["VA","Chesapeake",6],["VA","Norfolk",6],["VA","Richmond",6],["VA","Virginia Beach",6],["WA","Seattle",10.55],["WA","Tacoma",10.5],["WI","Madison",5.5]];
+  var SKINS=[["receipt","Receipt","#0f766e"],["midnight","Midnight","#8b7bff"],["sunset","Sunset","#e4572e"],["forest","Forest","#2f7d4f"],["ink","Ink","#000000"]];
+  function renderSkin(){var sk=S.skin||"receipt",r=document.documentElement;if(sk!=="receipt"&&!S.premium)sk="receipt";if(sk==="receipt")r.removeAttribute("data-skin");else r.setAttribute("data-skin",sk);$("themes").innerHTML=SKINS.map(function(k){return '<button class="chip pick" aria-pressed="'+(k[0]===sk)+'" data-skin="'+k[0]+'"><span class="dot" style="background:'+k[2]+'"></span>'+k[1]+(k[0]!=="receipt"&&!S.premium?" \ud83d\udd12":"")+'</button>'}).join("")}
+  function todayStr(){var d=new Date(),p=function(n){return(n<10?"0":"")+n};return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())}
+  function fmtDate(s){var a=(s||"").split("-");if(a.length<3)return"";return new Date(+a[0],+a[1]-1,+a[2]).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}
+  function renderHist(){
+    $("sdate").value=S.date||todayStr();$("slabel").value=S.label||"";
+    var h=S.hist||[];
+    $("histBox").innerHTML=h.length?'<h2 style="margin-top:22px">Saved splits</h2>'+h.map(function(e){return '<div class="treat"><span><b>'+esc(e.label||tl("Untitled split"))+'</b><br><span style="color:var(--mute);font-size:.82rem">'+fmtDate(e.date)+' · '+fmt(e.total)+' · '+e.n+' '+tl("people")+'</span></span><span><button class="ghost" data-hload="'+e.id+'" style="color:var(--acc)">Open</button><button class="ghost" data-hdel="'+e.id+'" aria-label="Delete">✕</button></span></div>'}).join(""):"";
+  }
+  function loadSaved(id){var e=(S.hist||[]).find(function(h){return h.id===id});if(!e)return;
+    S=Object.assign({people:[],items:[],treats:[],tax:"",tip:"18",nid:1,guest:null,payers:[],taxMode:"pct",city:"",taxPct:"",skin:S.skin,hist:S.hist,lang:S.lang,premium:S.premium,date:e.date,label:e.label},JSON.parse(JSON.stringify(e.snap)));
+    $("tax").value=S.tax;$("tip").value=S.tip;render();window.scrollTo(0,0)}
+  function shareImg(){
+    var c=calc();if(!S.people.length)return;
+    var W=720,P=40,RH=74,H=250+S.people.length*RH+60,cv=document.createElement("canvas");cv.width=W;cv.height=H;var x=cv.getContext("2d");
+    x.fillStyle="#fffdf7";x.fillRect(0,0,W,H);
+    x.textAlign="left";x.fillStyle="#1c2b36";x.font="800 46px 'Bricolage Grotesque','Segoe UI',sans-serif";x.fillText(S.label||"Tab Splitter",P,84);
+    x.fillStyle="#6b7b87";x.font="400 24px 'DM Mono',monospace";x.fillText(fmtDate(S.date||todayStr()),P,124);
+    x.strokeStyle="#cfd8de";x.lineWidth=2;x.setLineDash([8,8]);
+    var y=160;
+    S.people.forEach(function(p){
+      x.beginPath();x.moveTo(P,y);x.lineTo(W-P,y);x.stroke();
+      x.textAlign="left";x.fillStyle="#1c2b36";x.font="700 30px 'Bricolage Grotesque','Segoe UI',sans-serif";x.fillText(p.name,P,y+40);
+      if(c.covered[p.id]){x.fillStyle="#0f766e";x.font="400 20px 'Bricolage Grotesque','Segoe UI',sans-serif";x.fillText(tl("Meal covered by the group"),P,y+64)}
+      x.textAlign="right";x.fillStyle="#1c2b36";x.font="500 32px 'DM Mono',monospace";x.fillText(fmt(c.cents[p.id]),W-P,y+42);
+      y+=RH});
+    x.setLineDash([]);x.strokeStyle="#1c2b36";x.lineWidth=3;x.beginPath();x.moveTo(P,y+10);x.lineTo(W-P,y+10);x.stroke();
+    x.textAlign="left";x.font="800 34px 'Bricolage Grotesque','Segoe UI',sans-serif";x.fillText(tl("Total"),P,y+62);
+    x.textAlign="right";x.font="500 36px 'DM Mono',monospace";x.fillText(fmt(c.total),W-P,y+62);
+    window.__img=cv;$("outImg").src=cv.toDataURL("image/png");$("imgModal").hidden=false;
+  }
+  $("shareImg").onclick=function(){if(!S.premium){showPay();return}shareImg()};
+  $("closeImg").onclick=function(){$("imgModal").hidden=true};
+  $("shareBtn").onclick=function(){var m=$("imgMsg");m.textContent="";
+    window.__img.toBlob(function(bl){var f=new File([bl],"tab-splitter.png",{type:"image/png"});
+      if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f],title:"Tab Splitter"}).catch(function(e){if(e&&e.name!=="AbortError")m.textContent=tl("Sharing is blocked here. Tap Text it, or press and hold the image to save it.")});
+      else m.textContent=tl("Sharing is blocked here. Tap Text it, or press and hold the image to save it.")})};
+  $("smsBtn").onclick=function(){var m=$("imgMsg"),t=window.__sum?window.__sum():"Tab Splitter";
+    var a=document.createElement("a");a.href="sms:&body="+encodeURIComponent(t);a.target="_blank";a.rel="noopener";document.body.appendChild(a);a.click();a.remove();
+    m.textContent=tl("If Messages didn’t open, close this, tap Copy summary, then paste it into a text.")};
+  $("sdate").oninput=function(){S.date=this.value;save()};
+  $("slabel").oninput=function(){S.label=this.value;save()};
+  $("saveSplit").onclick=function(){var b=this;if(!S.premium){showPay();return}
+    if(!S.people.length||!S.items.length){b.textContent="Add items first";setTimeout(function(){b.textContent="Save split"},1500);return}
+    var c=calc(),snap=JSON.parse(JSON.stringify({people:S.people,items:S.items,treats:S.treats,tax:S.tax,tip:S.tip,nid:S.nid,taxMode:S.taxMode,state:S.state,city:S.city,taxPct:S.taxPct,local:S.local}));
+    S.hist=(S.hist||[]);S.hist.unshift({id:Date.now(),date:S.date||todayStr(),label:S.label||"",total:c.total,n:S.people.length,snap:snap});S.hist=S.hist.slice(0,30);
+    b.textContent="Saved";setTimeout(function(){b.textContent="Save split"},1500);render()};
+  $("bday").onclick=function(){if(!S.premium){showPay();return}if(!person(S.guest))return;var payers=S.people.filter(function(p){return p.id!==S.guest}).map(function(p){return p.id});if(!payers.length)return;S.treats=S.treats.filter(function(t){return t.guest!==S.guest});S.treats.push({guest:S.guest,payers:payers,bday:true});S.payers=[];render()};
+  var LANGS=[["en","English"],["es","Español"],["fr","Français"],["zh","中文"]];
+  var D={
+  es:{'Split the check':'Dividir la cuenta','Add everyone, tag wh':'Agrega a todos, marca quién compartió cada plato y deja que el grupo cubra la comida de alguien.','Who’s at the table':'Quiénes están en la mesa','Add a name':'Agregar un nombre','Add person':'Agregar persona','No one yet. Add at l':'Aún no hay nadie. Agrega al menos dos nombres.','Receipt items':'Artículos del recibo','Tap names under an i':'Toca los nombres debajo de un artículo para elegir quién lo compartió. El precio se divide en partes iguales entre ellos.','Item, e.g. Pizza':'Artículo, p. ej. Pizza','Add item':'Agregar artículo','No items yet. Add th':'Aún no hay artículos. Agrega el primero arriba.','Add people first':'Primero agrega personas.','Tap a name to choose':'Toca un nombre para elegir quién lo compartió.','Sales tax':'Impuesto sobre ventas','Pick your state and':'Elige tu estado y ciudad para completar la tasa, o ingresa el impuesto exacto de tu recibo. El impuesto se calcula sobre el total de la comida y se reparte según lo que pidió cada persona.','Rate by location':'Tasa por ubicación','Exact amount':'Monto exacto','State':'Estado','City':'Ciudad','Local rate (%)':'Tasa local (%)','Total rate (%)':'Tasa total (%)','Tax ($)':'Impuesto ($)','Pick a city for its':'Elige una ciudad para su tasa combinada, o elige Otra para sumar tu tasa local a la del estado. En algunos lugares las comidas en restaurantes tienen otro impuesto, así que edita el total si tu recibo es diferente.','Tip':'Propina','Set the tip as a per':'Define la propina como porcentaje del total de la comida. Se reparte según lo que pidió cada persona.','Tip (%)':'Propina (%)','Cover someone’s meal':'Cubrir la comida de alguien','Pick a guest, then c':'Elige a un invitado y luego a quienes aportan. La parte completa del invitado (comida, impuesto y propina) se divide en partes iguales entre ellos.','Guest':'Invitado','{n}’s meal':'Comida de {n}','Add a second person':'Agrega una segunda persona para compartir el costo.','Cover this meal':'Cubrir esta comida','🎂 Birthday: everyon':'🎂 Cumpleaños: los demás cubren','is covered by':'es cubierto(a) por','nobody':'nadie','Who pays what':'Quién paga cuánto','Add people and items':'Agrega personas y artículos para ver la división.','Food':'Comida','Tax':'Impuesto','Covering others':'Cubriendo a otros','Meal covered by the':'Comida cubierta por el grupo','item(s) without anyo':'artículo(s) sin nadie asignado.','Total':'Total','meal covered':'comida cubierta','Name (optional)':'Nombre (opcional)','e.g. Taco Tuesday':'p. ej. Martes de tacos','Date':'Fecha','Save split':'Guardar división','Saved':'Guardado','Add items first':'Agrega artículos primero','Share image':'Compartir imagen','Copy summary':'Copiar resumen','Copied':'Copiado','Copy not available':'Copiar no disponible','Start over':'Empezar de nuevo','Saved splits':'Divisiones guardadas','Open':'Abrir','Untitled split':'División sin título','people':'personas','Share':'Compartir','Close':'Cerrar','Press and hold the i':'Mantén presionada la imagen para guardarla.','Hold the image to sa':'Mantén presionada la imagen','Name':'Nombre','Item':'Artículo','Price':'Precio','Language':'Idioma','Choose a state':'Elige un estado','Choose a city':'Elige una ciudad','Other (type the loca':'Otra (escribe la tasa local)','Clear everyone and a':'¿Borrar a todos y todos los artículos?','Confirm':'Confirmar','📍 Use my location':'📍 Usar mi ubicación','Matched to {c}':'Coincide con {c}.','Closest listed city':'La ciudad más cercana de la lista es {c}, a unas {d} mi. Revisa tu recibo.','No listed city nearb':'No hay una ciudad de la lista cerca. Elige tu estado y ciudad arriba.','Location is blocked':'La ubicación está bloqueada o no está disponible aquí. Elige tu estado y ciudad arriba.','Finding your locatio':'Buscando tu ubicación…','Go Premium':'Hazte Premium','One payment. Yours f':'Un solo pago. Tuyo para siempre. Sin suscripción y sin anuncios.','Save your splits wit':'Guarda tus divisiones con fechas','Share a picture of t':'Comparte una imagen de la división','Birthday mode':'Modo cumpleaños','All five themes':'Los cinco temas','Unlock for {p}':'Desbloquear por {p}','Restore purchases':'Restaurar compras','Not now':'Ahora no','Preview premium (tes':'Probar Premium (solo para pruebas)','Premium':'Premium','Upgrade to Premium':'Mejorar a Premium','Purchases are availa':'Las compras están disponibles en la app para iPhone.','Purchase not complet':'Compra no completada.','No earlier purchase':'No se encontró ninguna compra anterior.','📷 Scan receipt':'📷 Escanear recibo','Reading your receipt':'Leyendo tu recibo…','Added {n} items. Che':'Se agregaron {n} artículos. Compáralos con tu recibo y toca los nombres para elegir quién compartió cada uno.','Couldn’t find any it':'No se encontraron artículos. Prueba con una foto más clara y bien iluminada.','Scanning didn’t work':'El escaneo no funcionó. Puedes agregar los artículos a mano.','Scan receipts to add':'Escanea recibos para agregar artículos','Meal and drink icons':'Íconos de comida y bebida','Add an icon':'Agregar un ícono','Keep the good times':'Que siga la buena vibra. Nosotros nos encargamos de las cuentas.','Sharing is blocked h':'Compartir está bloqueado aquí. Toca Enviar por texto o mantén presionada la imagen para guardarla.','If Messages didn’t o':'Si no se abrió Mensajes, cierra esto, toca Copiar resumen y pégalo en un mensaje de texto.','Text it':'Enviar por texto'},
+  fr:{'Split the check':'Partager l’addition','Add everyone, tag wh':'Ajoutez tout le monde, indiquez qui a partagé chaque plat et laissez le groupe offrir le repas de quelqu’un.','Who’s at the table':'Qui est à table','Add a name':'Ajouter un nom','Add person':'Ajouter une personne','No one yet. Add at l':'Personne pour l’instant. Ajoutez au moins deux noms.','Receipt items':'Articles du ticket','Tap names under an i':'Touchez les noms sous un article pour choisir qui l’a partagé. Le prix est réparti à parts égales entre eux.','Item, e.g. Pizza':'Article, p. ex. Pizza','Add item':'Ajouter l’article','No items yet. Add th':'Aucun article pour l’instant. Ajoutez le premier ci-dessus.','Add people first':'Ajoutez d’abord des personnes.','Tap a name to choose':'Touchez un nom pour choisir qui l’a partagé.','Sales tax':'Taxe de vente','Pick your state and':'Choisissez votre État et votre ville pour remplir le taux, ou saisissez la taxe exacte de votre ticket. La taxe est calculée sur le total du repas et répartie selon ce que chacun a commandé.','Rate by location':'Taux par lieu','Exact amount':'Montant exact','State':'État','City':'Ville','Local rate (%)':'Taux local (%)','Total rate (%)':'Taux total (%)','Tax ($)':'Taxe ($)','Pick a city for its':'Choisissez une ville pour son taux combiné, ou « Autre » pour ajouter votre taux local à celui de l’État. Les repas au restaurant peuvent être taxés différemment selon les endroits ; modifiez le total si votre ticket diffère.','Tip':'Pourboire','Set the tip as a per':'Définissez le pourboire en pourcentage du total du repas. Il est réparti selon ce que chacun a commandé.','Tip (%)':'Pourboire (%)','Cover someone’s meal':'Offrir le repas de quelqu’un','Pick a guest, then c':'Choisissez un invité, puis ceux qui contribuent. La part entière de l’invité (repas, taxe et pourboire) est répartie à parts égales entre eux.','Guest':'Invité','{n}’s meal':'Repas de {n}','Add a second person':'Ajoutez une deuxième personne pour partager le coût.','Cover this meal':'Offrir ce repas','🎂 Birthday: everyon':'🎂 Anniversaire : les autres offrent','is covered by':'est offert par','nobody':'personne','Who pays what':'Qui paie quoi','Add people and items':'Ajoutez des personnes et des articles pour voir le partage.','Food':'Repas','Tax':'Taxe','Covering others':'Offre aux autres','Meal covered by the':'Repas offert par le groupe','item(s) without anyo':'article(s) sans personne assignée.','Total':'Total','meal covered':'repas offert','Name (optional)':'Nom (facultatif)','e.g. Taco Tuesday':'p. ex. Mardi tacos','Date':'Date','Save split':'Enregistrer','Saved':'Enregistré','Add items first':'Ajoutez d’abord des articles','Share image':'Partager l’image','Copy summary':'Copier le résumé','Copied':'Copié','Copy not available':'Copie indisponible','Start over':'Recommencer','Saved splits':'Partages enregistrés','Open':'Ouvrir','Untitled split':'Partage sans titre','people':'personnes','Share':'Partager','Close':'Fermer','Press and hold the i':'Maintenez l’image appuyée pour l’enregistrer.','Hold the image to sa':'Maintenez l’image appuyée','Name':'Nom','Item':'Article','Price':'Prix','Language':'Langue','Choose a state':'Choisir un État','Choose a city':'Choisir une ville','Other (type the loca':'Autre (saisir le taux local)','Clear everyone and a':'Effacer tout le monde et tous les articles ?','Confirm':'Confirmer','📍 Use my location':'📍 Utiliser ma position','Matched to {c}':'Correspond à {c}.','Closest listed city':'La ville la plus proche de la liste est {c}, à environ {d} mi. Vérifiez votre ticket.','No listed city nearb':'Aucune ville de la liste à proximité. Choisissez votre État et votre ville ci-dessus.','Location is blocked':'La localisation est bloquée ou indisponible ici. Choisissez votre État et votre ville ci-dessus.','Finding your locatio':'Recherche de votre position…','Go Premium':'Passer à Premium','One payment. Yours f':'Un seul paiement. À vous pour toujours. Sans abonnement ni publicité.','Save your splits wit':'Enregistrez vos partages avec dates','Share a picture of t':'Partagez une image du partage','Birthday mode':'Mode anniversaire','All five themes':'Les cinq thèmes','Unlock for {p}':'Débloquer pour {p}','Restore purchases':'Restaurer les achats','Not now':'Pas maintenant','Preview premium (tes':'Aperçu Premium (test uniquement)','Premium':'Premium','Upgrade to Premium':'Passer à Premium','Purchases are availa':'Les achats sont disponibles dans l’app iPhone.','Purchase not complet':'Achat non terminé.','No earlier purchase':'Aucun achat précédent trouvé.','📷 Scan receipt':'📷 Numériser le ticket','Reading your receipt':'Lecture de votre ticket…','Added {n} items. Che':'{n} articles ajoutés. Comparez-les avec votre ticket, puis touchez les noms pour choisir qui a partagé chacun.','Couldn’t find any it':'Aucun article trouvé. Essayez une photo plus nette et bien éclairée.','Scanning didn’t work':'La numérisation a échoué. Vous pouvez ajouter les articles à la main.','Scan receipts to add':'Numérisez les tickets pour ajouter des articles','Meal and drink icons':'Icônes de repas et de boissons','Add an icon':'Ajouter une icône','Keep the good times':'Que la fête continue. On s’occupe des calculs.','Sharing is blocked h':'Le partage est bloqué ici. Touchez Envoyer par SMS ou maintenez l’image appuyée pour l’enregistrer.','If Messages didn’t o':'Si Messages ne s’est pas ouvert, fermez cette fenêtre, touchez Copier le résumé et collez-le dans un SMS.','Text it':'Envoyer par SMS'},
+  zh:{'Split the check':'分摊账单','Add everyone, tag wh':'添加所有人，标记每道菜由谁分享，还可以让大家替某人买单。','Who’s at the table':'谁在同桌','Add a name':'添加姓名','Add person':'添加人员','No one yet. Add at l':'还没有人，请至少添加两个名字。','Receipt items':'账单项目','Tap names under an i':'点击项目下方的名字，选择谁分享了它。价格会在他们之间平均分摊。','Item, e.g. Pizza':'项目，例如披萨','Add item':'添加项目','No items yet. Add th':'还没有项目，请在上方添加第一项。','Add people first':'请先添加人员。','Tap a name to choose':'点击名字，选择谁分享了它。','Sales tax':'销售税','Pick your state and':'选择州和城市以填入税率，或输入账单上的确切税额。税额按餐费总额计算，并按每人所点金额比例分摊。','Rate by location':'按地点选税率','Exact amount':'确切金额','State':'州','City':'城市','Local rate (%)':'地方税率 (%)','Total rate (%)':'总税率 (%)','Tax ($)':'税额 ($)','Pick a city for its':'选择城市以获得其综合税率，或选择“其他”将本地税率加到州税率上。有些地方对餐厅用餐的税率不同，如与账单不符，请修改总税率。','Tip':'小费','Set the tip as a per':'以餐费总额的百分比设置小费，并按每人所点金额比例分摊。','Tip (%)':'小费 (%)','Cover someone’s meal':'替某人买单','Pick a guest, then c':'选择一位客人，再选择出钱的人。该客人的全部份额（餐费、税和小费）将在他们之间平均分摊。','Guest':'客人','{n}’s meal':'{n}的餐费','Add a second person':'再添加一位成员来分摊费用。','Cover this meal':'替他买单','🎂 Birthday: everyon':'🎂 生日：其他人买单','is covered by':'由以下人员买单：','nobody':'无人','Who pays what':'每人应付','Add people and items':'添加人员和项目以查看分摊结果。','Food':'餐费','Tax':'税','Covering others':'替他人支付','Meal covered by the':'餐费由大家买单','item(s) without anyo':'个项目未指定任何人。','Total':'合计','meal covered':'已被买单','Name (optional)':'名称（可选）','e.g. Taco Tuesday':'例如：墨西哥卷饼星期二','Date':'日期','Save split':'保存分摊','Saved':'已保存','Add items first':'请先添加项目','Share image':'分享图片','Copy summary':'复制摘要','Copied':'已复制','Copy not available':'无法复制','Start over':'重新开始','Saved splits':'已保存的分摊','Open':'打开','Untitled split':'未命名分摊','people':'人','Share':'分享','Close':'关闭','Press and hold the i':'长按图片即可保存。','Hold the image to sa':'长按图片保存','Name':'姓名','Item':'项目','Price':'价格','Language':'语言','Choose a state':'选择州','Choose a city':'选择城市','Other (type the loca':'其他（输入地方税率）','Clear everyone and a':'清除所有人和所有项目？','Confirm':'确认','📍 Use my location':'📍 使用我的位置','Matched to {c}':'已匹配到 {c}。','Closest listed city':'列表中最近的城市是 {c}，约 {d} 英里。请核对账单。','No listed city nearb':'附近没有列表中的城市，请在上方选择州和城市。','Location is blocked':'此处无法使用定位。请在上方选择州和城市。','Finding your locatio':'正在获取您的位置…','Go Premium':'升级到高级版','One payment. Yours f':'一次付费，永久使用。无订阅，无广告。','Save your splits wit':'保存带日期的分摊记录','Share a picture of t':'分享分摊结果图片','Birthday mode':'生日模式','All five themes':'全部五种主题','Unlock for {p}':'以 {p} 解锁','Restore purchases':'恢复购买','Not now':'暂不','Preview premium (tes':'预览高级版（仅供测试）','Premium':'高级版','Upgrade to Premium':'升级到高级版','Purchases are availa':'可在 iPhone 应用中购买。','Purchase not complet':'购买未完成。','No earlier purchase':'未找到之前的购买记录。','📷 Scan receipt':'📷 扫描账单','Reading your receipt':'正在读取您的账单…','Added {n} items. Che':'已添加 {n} 个项目。请与账单核对，然后点击名字选择谁分享了每一项。','Couldn’t find any it':'未找到任何项目。请尝试拍摄更清晰、光线充足的照片。','Scanning didn’t work':'扫描失败。您可以手动添加项目。','Scan receipts to add':'扫描账单自动添加项目','Meal and drink icons':'餐点和饮品图标','Add an icon':'添加图标','Keep the good times':'尽情欢聚，算账交给我们。','Sharing is blocked h':'此处无法分享。请点“短信发送”，或长按图片保存。','If Messages didn’t o':'如果信息应用没有打开，请关闭此窗口，点“复制摘要”，然后粘贴到短信中。','Text it':'短信发送'}
+  };
+  function nk(s){return String(s).replace(/\s+/g," ").trim().replace(/\.+$/,"").slice(0,20).trim()}
+  function tl(k){var d=D[S.lang];return(d&&d[nk(k)])||k}
+  function applyLang(){
+    var d=D[S.lang]||null,w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),n,list=[];
+    while((n=w.nextNode()))list.push(n);
+    list.forEach(function(n){var p=n.parentNode&&n.parentNode.nodeName;if(p==="SCRIPT"||p==="STYLE")return;
+      if(n._o===undefined)n._o=n.nodeValue;
+      var s=n._o,out=s;
+      if(d){var m=s.match(/^(\s*)([\s\S]*?)(\s*)$/);if(m[2]){var v=d[nk(m[2])];if(v)out=m[1]+v+m[3]}}
+      if(n.nodeValue!==out)n.nodeValue=out});
+    Array.prototype.forEach.call(document.querySelectorAll("[placeholder]"),function(e){if(e._ph===undefined)e._ph=e.getAttribute("placeholder");var v=d&&d[nk(e._ph)];e.setAttribute("placeholder",v||e._ph)});
+    document.documentElement.lang=S.lang||"en";
+  }
+  $("lang").onchange=function(){S.lang=this.value;$("locMsg").textContent="";render();applyLang();save()};
+  var raf=0;new MutationObserver(function(){if(raf)return;raf=requestAnimationFrame(function(){raf=0;applyLang()})}).observe(document.body,{childList:true,subtree:true});
+  var LOC=[["Alhambra","CA",34.09,-118.13],["Anaheim","CA",33.84,-117.91],["Arcadia","CA",34.14,-118.04],["Beverly Hills","CA",34.07,-118.4],["Buena Park","CA",33.87,-118],["Burbank","CA",34.18,-118.31],["Calabasas","CA",34.14,-118.66],["Carson","CA",33.84,-118.26],["Cathedral City","CA",33.78,-116.47],["Compton","CA",33.9,-118.22],["Desert Hot Springs","CA",33.96,-116.5],["Escondido","CA",33.12,-117.09],["Fontana","CA",34.09,-117.44],["Fremont","CA",37.55,-121.99],["Glendale","CA",34.14,-118.26],["Grand Terrace","CA",34.03,-117.31],["Grover Beach","CA",35.12,-120.62],["Hemet","CA",33.75,-116.97],["Hesperia","CA",34.43,-117.3],["Highland","CA",34.13,-117.21],["Huntington Beach","CA",33.66,-118],["Imperial Beach","CA",32.58,-117.11],["Inglewood","CA",33.96,-118.35],["Kingsburg","CA",36.51,-119.56],["La Habra","CA",33.93,-117.95],["La Mesa","CA",32.77,-117.02],["Laguna Niguel","CA",33.52,-117.71],["Lake Forest","CA",33.65,-117.69],["Lakewood","CA",33.85,-118.13],["Lancaster","CA",34.7,-118.14],["Lemon Grove","CA",32.74,-117.03],["Live Oak","CA",39.28,-121.66],["Long Beach","CA",33.77,-118.19],["Los Angeles","CA",34.05,-118.24],["Marysville","CA",39.15,-121.59],["Moreno Valley","CA",33.94,-117.23],["Oakland","CA",37.8,-122.27],["Oceanside","CA",33.2,-117.38],["Palm Desert","CA",33.72,-116.37],["Palmdale","CA",34.58,-118.12],["Pasadena","CA",34.15,-118.14],["Paso Robles","CA",35.63,-120.69],["Perris","CA",33.78,-117.23],["Pleasant Hill","CA",37.95,-122.06],["Point Arena","CA",38.91,-123.69],["Pomona","CA",34.06,-117.75],["Poway","CA",32.96,-117.04],["Rancho Cucamonga","CA",34.11,-117.59],["Rancho Mirage","CA",33.74,-116.41],["Red Bluff","CA",40.18,-122.24],["Redding","CA",40.59,-122.39],["Redlands","CA",34.06,-117.18],["Rialto","CA",34.11,-117.37],["Ridgecrest","CA",35.62,-117.67],["Riverside","CA",33.95,-117.4],["San Bernardino","CA",34.11,-117.29],["San Clemente","CA",33.43,-117.61],["San Diego","CA",32.72,-117.16],["San Francisco","CA",37.77,-122.42],["San Jacinto","CA",33.78,-116.96],["San Jose","CA",37.34,-121.89],["San Juan Bautista","CA",36.85,-121.54],["San Marcos","CA",33.14,-117.17],["San Marino","CA",34.12,-118.11],["San Ramon","CA",37.78,-121.98],["Santa Clarita","CA",34.39,-118.54],["Santa Monica","CA",34.02,-118.49],["Torrance","CA",33.84,-118.34],["Whittier","CA",33.98,-118.03],["Yucaipa","CA",34.03,-117.04],["Yucca Valley","CA",34.12,-116.43],["Birmingham","AL",33.52,-86.8],["Anchorage","AK",61.22,-149.9],["Phoenix","AZ",33.45,-112.07],["Denver","CO",39.74,-104.99],["Jacksonville","FL",30.33,-81.66],["Miami","FL",25.76,-80.19],["Orlando","FL",28.54,-81.38],["Atlanta","GA",33.75,-84.39],["Honolulu","HI",21.31,-157.86],["Boise","ID",43.62,-116.2],["Chicago","IL",41.88,-87.63],["New Orleans","LA",29.95,-90.07],["Minneapolis","MN",44.98,-93.27],["Saint Paul","MN",44.95,-93.09],["Kansas City","MO",39.1,-94.58],["Las Vegas","NV",36.17,-115.14],["New York City","NY",40.71,-74.01],["Philadelphia","PA",39.95,-75.17],["Pittsburgh","PA",40.44,-79.99],["Memphis","TN",35.15,-90.05],["Nashville","TN",36.16,-86.78],["Austin","TX",30.27,-97.74],["Dallas","TX",32.78,-96.8],["Fort Worth","TX",32.76,-97.33],["Houston","TX",29.76,-95.37],["San Antonio","TX",29.42,-98.49],["Chesapeake","VA",36.77,-76.29],["Norfolk","VA",36.85,-76.29],["Richmond","VA",37.54,-77.44],["Virginia Beach","VA",36.85,-75.98],["Seattle","WA",47.61,-122.33],["Tacoma","WA",47.25,-122.44],["Madison","WI",43.07,-89.4]];
+  function nearCity(la,lo){var best=null,bd=1e9,R=Math.PI/180;LOC.forEach(function(c){var dl=(c[2]-la)*R,dn=(c[3]-lo)*R,a=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(la*R)*Math.cos(c[2]*R)*Math.sin(dn/2)*Math.sin(dn/2),d=3958.8*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));if(d<bd){bd=d;best=c}});return{c:best,d:bd}}
+  $("locBtn").onclick=function(){var m=$("locMsg");
+    if(!navigator.geolocation){m.textContent=tl("Location is blocked or unavailable here. Choose your state and city above.");return}
+    m.textContent=tl("Finding your location…");
+    navigator.geolocation.getCurrentPosition(function(p){var r=nearCity(p.coords.latitude,p.coords.longitude);
+      if(!r.c||r.d>50){m.textContent=tl("No listed city nearby. Choose your state and city above.");return}
+      S.state=r.c[1];S.city=r.c[0];S.local="";S.taxMode="pct";
+      var f=cityList().find(function(x){return x[0]===r.c[0]});S.taxPct=f?String(f[2]):"";
+      renderTax();renderResults();save();
+      m.textContent=r.d<=12?tl("Matched to {c}.").replace("{c}",r.c[0]):tl("Closest listed city is {c}, about {d} mi away. Check your receipt.").replace("{c}",r.c[0]).replace("{d}",Math.round(r.d))},
+    function(){m.textContent=tl("Location is blocked or unavailable here. Choose your state and city above.")},{timeout:10000,maximumAge:600000})};
+  function priceStr(){return(window.NativePurchases&&window.NativePurchases.price)||"$1.99"}
+  function renderPrem(){document.body.classList.toggle("prem",!!S.premium);renderBg();
+    $("premBox").innerHTML=S.premium?'<span class="chip">\u2605 '+tl("Premium")+'</span>':'<button id="upBtn">'+tl("Upgrade to Premium")+' \u00b7 '+priceStr()+'</button><button class="ghost" id="rsBtn">'+tl("Restore purchases")+'</button>';
+    var u=$("upBtn");if(u)u.onclick=showPay;var r=$("rsBtn");if(r)r.onclick=restore;}
+  function showPay(){$("payMsg").textContent="";$("buyBtn").textContent=tl("Unlock for {p}").replace("{p}",priceStr());$("payModal").hidden=false}
+  function unlock(){S.premium=true;save();$("payModal").hidden=true;render()}
+  function restore(){var N=window.NativePurchases;
+    if(!N||!N.restore){showPay();$("payMsg").textContent=tl("Purchases are available in the iPhone app.");return}
+    N.restore().then(function(ok){if(ok)unlock();else{showPay();$("payMsg").textContent=tl("No earlier purchase found.")}},function(){showPay();$("payMsg").textContent=tl("No earlier purchase found.")})}
+  $("buyBtn").onclick=function(){var m=$("payMsg"),N=window.NativePurchases;
+    if(!N||!N.buy){m.textContent=tl("Purchases are available in the iPhone app.");return}
+    N.buy().then(function(ok){if(ok)unlock();else m.textContent=tl("Purchase not completed.")},function(){m.textContent=tl("Purchase not completed.")})};
+  $("restoreBtn").onclick=restore;
+  $("payClose").onclick=function(){$("payModal").hidden=true};
+  var scanAPI=null;
+  function shrink(file,max){return new Promise(function(res,rej){var fr=new FileReader();fr.onerror=function(){rej(new Error("read"))};fr.onload=function(){var im=new Image();im.onload=function(){var s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext("2d").drawImage(im,0,0,c.width,c.height);c.toBlob(function(b){b?res(b):rej(new Error("blob"))},"image/jpeg",0.85)};im.onerror=function(){rej(new Error("img"))};im.src=fr.result};fr.readAsDataURL(file)})}
+  function aiScan(sm,file){return shrink(file,1600).then(function(b){return sm.json("This is a photo of a restaurant or store receipt. List each purchased line item with its price. Reply with ONLY a JSON array like [{\"name\":\"Pizza\",\"price\":12.5}]. Use each line's total price as a plain number with no currency symbol. Skip subtotal, tax, tip, total, discount and payment lines. If the photo is not a receipt or cannot be read, reply with [].",{images:[b]})}).then(function(a){return Array.isArray(a)?a:[]})}
+  (function(){
+    var show=function(f){scanAPI=f;$("scanRow").hidden=false};
+    if(window.NativeScan&&window.NativeScan.scan){show(function(f){return window.NativeScan.scan(f)});return}
+    if(window.claude&&window.claude.use)window.claude.use("sample").then(function(sm){if(!sm)return;return sm.limits().then(function(l){if(l&&l.images)show(function(f){return aiScan(sm,f)})})}).catch(function(){});
+  })();
+  $("scanBtn").onclick=function(){if(!S.premium){showPay();return}$("scanFile").click()};
+  $("scanFile").onchange=function(){var f=this.files&&this.files[0];this.value="";if(!f||!scanAPI)return;
+    var m=$("scanMsg"),b=$("scanBtn");m.textContent=tl("Reading your receipt…");b.disabled=true;
+    Promise.resolve().then(function(){return scanAPI(f)}).then(function(list){
+      var n=0;(list||[]).forEach(function(r){var nm=String(r.name||"").trim().slice(0,40),pr=parseFloat(r.price);if(nm&&pr>=0&&!isNaN(pr)){S.items.push({id:S.nid++,name:nm,price:Math.round(pr*100)/100,who:[]});n++}});
+      render();
+      m.textContent=n?tl("Added {n} items. Check them against your receipt, then tap names to choose who shared each one.").replace("{n}",n):tl("Couldn’t find any items. Try a clearer, well-lit photo.");
+    }).catch(function(){m.textContent=tl("Scanning didn’t work. You can add items by hand.")}).then(function(){b.disabled=false})};
+  var ICO={meal:'<circle cx="11.5" cy="12" r="4.5"/><path d="M3.5 3v6a1.5 1.5 0 0 0 3 0V3M5 9v12M20 3c-2 1.5-3 4-3 7h3v11"/>',drink:'<path d="M6 8h12l-1.3 12a1 1 0 0 1-1 .9H8.3a1 1 0 0 1-1-.9L6 8z"/><path d="M5 8h14M13 8l1-5h3"/>',coffee:'<path d="M4 9h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9z"/><path d="M16 11h2a2.5 2.5 0 0 1 0 5h-2M7 3v3M11 3v3"/>',dessert:'<path d="M4 20h16v-4H4z"/><path d="M5 16v-5a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5"/><path d="M12 8V6"/><circle cx="12" cy="4.5" r="1.2"/>'};
+  function icoSvg(k,s){return '<svg class="ico '+k+'" viewBox="0 0 24 24" width="'+(s||20)+'" height="'+(s||20)+'" aria-hidden="true">'+ICO[k]+'</svg>'}
+  function guessIcon(n){n=String(n).toLowerCase();
+    if(/coffee|latte|espresso|cappuccino|\btea\b|mocha/.test(n))return"coffee";
+    if(/cake|dessert|ice cream|\bpie\b|cookie|brownie|gelato|donut|pastry|sundae/.test(n))return"dessert";
+    if(/soda|cola|beer|wine|juice|water|drink|cocktail|margarita|lemonade|smoothie|shake|sprite|coke|\bale\b|lager|whiskey|vodka|mojito|sangria/.test(n))return"drink";
+    return"meal"}
+  function icoRow(it){
+    if(!S.premium)return '<div style="margin-top:8px"><button class="ghost" data-icolock="1" style="padding:4px 2px;color:var(--mute)">\ud83d\udd12 '+tl("Add an icon")+'</button></div>';
+    return '<div class="chips" style="margin-top:8px;gap:6px">'+["meal","drink","coffee","dessert"].map(function(k){return '<button class="icob" aria-pressed="'+(it.ic===k)+'" aria-label="'+k+'" data-ico="'+it.id+':'+k+'">'+icoSvg(k)+'</button>'}).join("")+'</div>'}
+  var bgKey="",bgT=0;
+  function renderBg(){var el=$("bgIcons"),W=window.innerWidth||400,H=Math.max(window.innerHeight||600,300),key=(S.premium?1:0)+"|"+W+"x"+H;
+    if(key===bgKey)return;bgKey=key;
+    if(!S.premium){el.innerHTML="";return}
+    var cell=96,cols=Math.ceil(W/cell)+1,rows=Math.ceil(H/cell)+1,keys=["meal","drink","coffee","dessert"],h="";
+    for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){var i=r*cols+c,k=keys[(r+c*2)%4],ox=(i*37)%30-15,oy=(i*53)%30-15,rot=(i*47)%60-30,sz=30+(i*29)%16;
+      h+='<span style="position:absolute;left:'+(c*cell+ox+(r%2?cell/2:0)-cell/2)+'px;top:'+(r*cell+oy)+'px;transform:rotate('+rot+'deg)">'+icoSvg(k,sz)+'</span>'}
+    el.innerHTML=h}
+  window.addEventListener("resize",function(){clearTimeout(bgT);bgT=setTimeout(renderBg,200)});
+  function cityList(){return S.state==="CA"?CITIES:XC.filter(function(c){return c[0]===S.state}).map(function(c){return [c[1],"",c[2]]})}
+  function renderTax(){
+    var pct=S.taxMode!=="amt";
+    $("mPct").setAttribute("aria-pressed",pct);$("mAmt").setAttribute("aria-pressed",!pct);
+    $("pctBox").hidden=!pct;$("amtBox").hidden=pct;
+    var st=$("state");if(!st.options.length){st.innerHTML='<option value="">Choose a state</option>'+STATES.map(function(s){return '<option value="'+s[0]+'">'+s[1]+' ('+s[2]+'%)</option>'}).join("")}if(!S.state&&S.city)S.state="CA";st.value=S.state||"";var cl=cityList();$("cityWrap").hidden=!cl.length;$("localWrap").hidden=!S.state||(cl.length>0&&!!S.city&&S.city!=="other");$("localPct").value=S.local||"";var sel=$("city");
+    sel.innerHTML='<option value="">Choose a city</option>'+cl.map(function(c){return '<option value="'+c[0]+'">'+c[0]+(c[1]?', '+c[1]+' Co.':'')+' ('+c[2]+'%)</option>'}).join("")+'<option value="other">Other (type the local rate)</option>';
+    sel.value=S.city||"";
+    $("taxPct").value=S.taxPct;
+  }
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function fmt(c){return "$"+(c/100).toFixed(2)}
+  function person(id){return S.people.find(function(p){return p.id===id})}
+  function dot(p){return '<span class="dot" style="background:hsl('+HUES[p.hue%HUES.length]+',65%,50%)"></span>'}
+
+  function calc(){
+    var base={},i;
+    S.people.forEach(function(p){base[p.id]=0});
+    var assigned=0,taxable=0,tb={},unassigned=[];S.people.forEach(function(p){tb[p.id]=0});
+    S.items.forEach(function(it){
+      var who=it.who.filter(person);
+      if(!who.length){unassigned.push(it);return}
+      assigned+=it.price;if(!it.nt)taxable+=it.price;
+      who.forEach(function(id){base[id]+=it.price/who.length;if(!it.nt)tb[id]+=it.price/who.length});
+    });
+    var tax=S.taxMode==="amt"?(parseFloat(S.tax)||0):taxable*(parseFloat(S.taxPct)||0)/100,tipP=parseFloat(S.tip)||0,tip=assigned*tipP/100;
+    var sub={},tt={},txs={},tps={};
+    S.people.forEach(function(p){
+      sub[p.id]=base[p.id];
+      var share=assigned>0?base[p.id]/assigned:0;
+      txs[p.id]=tax*(taxable>0?tb[p.id]/taxable:share);tps[p.id]=tip*share;tt[p.id]=txs[p.id]+tps[p.id];
+    });
+    var own={};S.people.forEach(function(p){own[p.id]=sub[p.id]+tt[p.id]});
+    var fin={},given={},covers={};
+    S.people.forEach(function(p){fin[p.id]=own[p.id];given[p.id]=0;covers[p.id]=0});
+    var covered={};
+    S.treats.forEach(function(t){
+      var payers=t.payers.filter(person);
+      if(!person(t.guest)||!payers.length||covered[t.guest])return;
+      covered[t.guest]=true;
+      fin[t.guest]-=own[t.guest];
+      payers.forEach(function(id){var x=own[t.guest]/payers.length;fin[id]+=x;covers[id]+=x});
+    });
+    // round to cents, keep total exact
+    var total=0;S.people.forEach(function(p){total+=own[p.id]});
+    var tc=Math.round(total*100),cents={},rem=0,order=[];
+    S.people.forEach(function(p){var v=fin[p.id]*100;var f=Math.floor(v+1e-9);cents[p.id]=f;rem+=f;order.push({id:p.id,fr:v-f})});
+    var diff=tc-rem;order.sort(function(a,b){return b.fr-a.fr});
+    for(i=0;diff>0&&order.length;i=(i+1)%order.length,diff--)cents[order[i].id]++;
+    return{cents:cents,own:own,covers:covers,covered:covered,total:tc,unassigned:unassigned,sub:sub,tt:tt,txs:txs,tps:tps,assigned:assigned};
+  }
+
+  function renderPeople(){
+    var h="";
+    S.people.forEach(function(p){
+      h+='<span class="chip">'+dot(p)+esc(p.name)+'<button class="ghost" data-rm-person="'+p.id+'" aria-label="Remove '+esc(p.name)+'" style="padding:0 2px">✕</button></span>';
+    });
+    $("people").innerHTML=h||'<span class="empty">No one yet. Add at least two names.</span>';
+  }
+  function renderItems(){
+    var h="";
+    S.items.forEach(function(it){
+      var chips="";
+      S.people.forEach(function(p){
+        var on=it.who.indexOf(p.id)>-1;
+        chips+='<button class="chip pick" aria-pressed="'+on+'" data-tog="'+it.id+':'+p.id+'">'+dot(p)+esc(p.name)+'</button>';
+      });
+      var none=!it.who.filter(person).length;
+      h+='<div class="item"><div class="top"><span class="nm">'+esc(it.name)+'</span><span><span class="money">'+fmt(Math.round(it.price*100))+'</span> <button class="ghost" data-rm-item="'+it.id+'" aria-label="Remove '+esc(it.name)+'">✕</button></span></div>'+
+        '<div class="chips" style="margin-top:8px">'+(chips||'<span class="empty">Add people first.</span>')+'</div>'+
+        (none&&S.people.length?'<div class="warn">Tap a name to choose who shared this.</div>':'')+'</div>';
+    });
+    $("items").innerHTML=h||'<div class="empty">No items yet. Add the first one above.</div>';
+  }
+  function renderTips(){
+    var h="";[15,18,20,25].forEach(function(v){
+      h+='<button aria-pressed="'+(parseFloat(S.tip)===v)+'" data-tip="'+v+'">'+v+'%</button>';
+    });
+    $("tipPresets").innerHTML=h;
+  }
+  function renderCover(){
+    var sel=$("guest");
+    if(!person(S.guest))S.guest=S.people.length?S.people[0].id:null;
+    sel.innerHTML=S.people.map(function(p){return '<option value="'+p.id+'"'+(p.id===S.guest?' selected':'')+'>'+esc(tl("{n}’s meal").replace("{n}",p.name))+'</option>'}).join("")||'<option>Add people first</option>';
+    S.payers=S.payers.filter(function(id){return person(id)&&id!==S.guest});
+    var h="";
+    S.people.forEach(function(p){
+      if(p.id===S.guest)return;
+      h+='<button class="chip pick" aria-pressed="'+(S.payers.indexOf(p.id)>-1)+'" data-payer="'+p.id+'">'+dot(p)+esc(p.name)+'</button>';
+    });
+    $("payers").innerHTML=h||'<span class="empty">Add a second person to share the cost.</span>';
+    var t="";
+    S.treats.forEach(function(x,i){
+      var g=person(x.guest);if(!g)return;
+      var names=x.payers.map(person).filter(Boolean).map(function(p){return esc(p.name)}).join(", ");
+      t+='<div class="treat"><span>'+(x.bday?'🎂 ':'')+'<b>'+esc(g.name)+'</b> '+tl("is covered by")+' '+(names||tl("nobody"))+'</span><button class="ghost" data-rm-treat="'+i+'" aria-label="Remove">✕</button></div>';
+    });
+    $("treats").innerHTML=t;
+  }
+  function renderResults(){
+    var c=calc(),h="";
+    if(!S.people.length){$("results").innerHTML='<div class="empty">Add people and items to see the split.</div>';return}
+    S.people.forEach(function(p){
+      var isFree=c.covered[p.id];
+      var det=[];
+      det.push(tl("Food")+" "+fmt(Math.round(c.sub[p.id]*100)));
+      det.push(tl("Tax")+" "+fmt(Math.round(c.txs[p.id]*100)));
+      det.push(tl("Tip")+" "+fmt(Math.round(c.tps[p.id]*100)));
+      if(c.covers[p.id]>0)det.push(tl("Covering others")+" "+fmt(Math.round(c.covers[p.id]*100)));
+      if(isFree)det.push(tl("Meal covered by the group"));
+      h+='<div class="res'+(isFree&&c.cents[p.id]===0?' free':'')+'"><div><div class="who">'+dot(p)+esc(p.name)+'</div><div class="det">'+det.join(" · ")+'</div></div><div class="amt money">'+fmt(c.cents[p.id])+'</div></div>';
+    });
+    h+='<div class="tot"><span>Total</span><span class="money">'+fmt(c.total)+'</span></div>';
+    if(c.unassigned.length)h+='<div class="warn">'+c.unassigned.length+' '+tl("item(s) without anyone tagged.")+'</div>';
+    $("results").innerHTML=h;
+    window.__sum=function(){
+      var l=["Tab Splitter"];
+      S.people.forEach(function(p){l.push(p.name+": "+fmt(c.cents[p.id])+(c.covered[p.id]?" ("+tl("meal covered")+")":""))});
+      l.push(tl("Total")+": "+fmt(c.total));return l.join("\n");
+    };
+  }
+  function render(){renderPrem();renderHist();renderSkin();renderTax();renderPeople();renderItems();renderTips();renderCover();renderResults();save()}
+
+  function addPerson(){
+    var v=$("pname").value.trim();if(!v)return;
+    S.people.push({id:S.nid++,name:v,hue:S.people.length});
+    $("pname").value="";render();$("pname").focus();
+  }
+  function addItem(){
+    var n=$("iname").value.trim(),pr=parseFloat($("iprice").value);
+    if(!n||!(pr>=0)||isNaN(pr)){$("iname").focus();return}
+    S.items.push({id:S.nid++,name:n,price:pr,who:[]});
+    $("iname").value="";$("iprice").value="";render();$("iname").focus();
+  }
+  $("addPerson").onclick=addPerson;
+  $("pname").onkeydown=function(e){if(e.key==="Enter")addPerson()};
+  $("addItem").onclick=addItem;
+  $("iprice").onkeydown=$("iname").onkeydown=function(e){if(e.key==="Enter")addItem()};
+  $("tax").value=S.tax;
+  $("tax").oninput=function(){S.tax=this.value;renderResults();save()};
+  function stRate(){var s=STATES.find(function(x){return x[0]===S.state});return s?s[2]:null}
+  $("state").onchange=function(){S.state=this.value;S.city="";S.local="";var r=stRate();S.taxPct=r===null?"":String(r);renderTax();renderResults();save()};
+  $("localPct").oninput=function(){S.local=this.value;var r=stRate()||0;S.taxPct=String(Math.round((r+(parseFloat(this.value)||0))*1000)/1000);$("taxPct").value=S.taxPct;renderResults();save()};
+  $("city").onchange=function(){var v=this.value;S.city=v;if(v&&v!=="other"){var c=cityList().find(function(x){return x[0]===v});if(c){S.taxPct=String(c[2]);S.local=""}}else{var r=stRate();S.taxPct=r===null?"":String(r);S.local=""}renderTax();renderResults();save()};
+  $("taxPct").oninput=function(){var val=this.value;S.taxPct=val;var sr=stRate();if(S.state&&sr!==null){var lc=Math.round((parseFloat(val)-sr)*1000)/1000;S.local=lc>0?String(lc):"";$("localPct").value=S.local}var match=cityList().find(function(x){return x[0]===S.city&&x[2]===parseFloat(val)});if(S.city&&S.city!=="other"&&!match){S.city="other";renderTax()}renderResults();save()};
+  $("tip").oninput=function(){S.tip=this.value;renderTips();renderResults();save()};
+  $("guest").onchange=function(){S.guest=parseInt(this.value,10);S.payers=[];renderCover()};
+  $("addTreat").onclick=function(){
+    if(!person(S.guest))return;
+    var payers=S.payers.length?S.payers.slice():S.people.filter(function(p){return p.id!==S.guest}).map(function(p){return p.id});
+    if(!payers.length)return;
+    S.treats=S.treats.filter(function(t){return t.guest!==S.guest});
+    S.treats.push({guest:S.guest,payers:payers});S.payers=[];render();
+  };
+  $("copy").onclick=function(){
+    var b=this,t=window.__sum?window.__sum():"";
+    function done(){b.textContent="Copied";setTimeout(function(){b.textContent="Copy summary"},1500)}
+    try{navigator.clipboard.writeText(t).then(done,function(){b.textContent="Copy not available"})}catch(e){b.textContent="Copy not available"}
+  };
+  $("reset").onclick=function(){
+    var b=this;if(!b._arm){b._arm=true;b.textContent="Confirm";setTimeout(function(){b._arm=false;b.textContent="Start over"},3000);return}b._arm=false;b.textContent="Start over";
+    S={people:[],items:[],treats:[],tax:"",tip:"18",nid:1,guest:null,payers:[],taxMode:"pct",city:"",taxPct:"",skin:S.skin,hist:S.hist,lang:S.lang,premium:S.premium};
+    $("tax").value="";$("tip").value="18";render();
+  };
+  document.addEventListener("click",function(e){
+    var el=e.target.closest("button");if(!el)return;
+    var d=el.dataset;
+    if(d.rmPerson){var id=+d.rmPerson;S.people=S.people.filter(function(p){return p.id!==id});S.treats=S.treats.filter(function(t){return t.guest!==id});S.treats.forEach(function(t){t.payers=t.payers.filter(function(x){return x!==id})});render()}
+    else if(d.rmItem){var iid=+d.rmItem;S.items=S.items.filter(function(i){return i.id!==iid});render()}
+    else if(d.tog){var a=d.tog.split(":"),it=S.items.find(function(i){return i.id===+a[0]}),pid=+a[1];
+      if(it){var k=it.who.indexOf(pid);if(k>-1)it.who.splice(k,1);else it.who.push(pid);render()}}
+    else if(d.tip){S.tip=d.tip;$("tip").value=d.tip;renderTips();renderResults();save()}
+    else if(d.payer){var q=+d.payer,j=S.payers.indexOf(q);if(j>-1)S.payers.splice(j,1);else S.payers.push(q);renderCover();save()}
+    else if(d.rmTreat){S.treats.splice(+d.rmTreat,1);render()}
+    else if(d.tmode){S.taxMode=d.tmode;renderTax();renderResults();save()}
+    else if(d.skin){if(d.skin!=="receipt"&&!S.premium){showPay();return}S.skin=d.skin;renderSkin();save()}
+    else if(d.nt){var ni=S.items.find(function(i){return i.id===+d.nt});if(ni){ni.nt=!ni.nt;render()}}
+    else if(d.hload){loadSaved(+d.hload)}
+    else if(d.hdel){S.hist=(S.hist||[]).filter(function(h){return h.id!==+d.hdel});render()}
+  });
+  load();if(!S.lang){var nl=((navigator.language||"en")+"").slice(0,2);S.lang=D[nl]?nl:"en"}$("lang").innerHTML=LANGS.map(function(l){return '<option value="'+l[0]+'">'+l[1]+'</option>'}).join("");$("lang").value=S.lang;$("tax").value=S.tax;$("tip").value=S.tip;render();applyLang();
+})();
+</script>
+</body>
+</html>
